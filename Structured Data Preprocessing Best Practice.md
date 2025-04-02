@@ -1,4 +1,9 @@
-Best practice in preprocessing numerical, categorical, timestampe/date, short text for recommenders.
+Best practice in preprocessing structured data for recommenders
+* numerical. like age, income, price, etc
+* categorical. like country, gender, user_id, movie_id, product_sku, etc
+* timestampe/date.
+* boolean, including multi-hot sparse input like viewing history, click history, etc.
+* short text, like movie titles, search queries, user profiles, description
 
 Use [Keras preprocessing layers](https://keras.io/api/layers/preprocessing_layers/) for example code.
 Suppose we have a `DataFrame` `df` that contains the data. 
@@ -38,22 +43,21 @@ normalized_num = norm_layer(age_input)
 ```
 
 #### Why Don't We Typically Discretize for Deep Models?
-(From ChatGPT)
 
- ✅ 1. **Deep models can learn nonlinear patterns directly**
+ 1. **Deep models can learn nonlinear patterns directly**
 - DNNs can **approximate arbitrary functions**.
 - If age has a nonlinear relationship with your target (e.g., clicks peak at age 25–35), a deep model can **learn that pattern** from raw continuous input.
 > No need to hand-engineer bins — deep models learn their own "bins" internally via learned weights.
 
- ✅ 2. **Discretization destroys granularity**
+ 2. **Discretization destroys granularity**
 - If you bucket age 25 and 39 into the same bin `[20–40)`, the model **can’t tell them apart**, even though they’re very different.
 - Continuous inputs preserve more **fine-grained information**, which DNNs thrive on.
 
- ✅ 3. **Discretization = manual inductive bias**
+ 3. **Discretization = manual inductive bias**
 - It imposes **hard thresholds** based on assumptions.
 - Might work well if your bins are meaningful (e.g., "teen", "adult", "senior"), but if not carefully tuned, it can **introduce error** or degrade performance.
 - 
- ✅ 4. **Gradient flow is better with continuous features**
+ 4. **Gradient flow is better with continuous features**
 - DNNs rely on **smooth gradients** to optimize.
 - Discretization introduces **sudden jumps (non-differentiable boundaries)**, which can make learning harder or unstable — especially if you apply binning too early in the pipeline.
 
@@ -86,6 +90,9 @@ tier_vector = layers.Flatten()(embedding)  # shape: (batch, 4)
 ```
 
 For High-Cardinality Categorical Features, like user_id, movie_id, product_sku, etc.
+* High means >= 100K. or long tail
+* Cold start, the number of category is dynamic and realtime. 
+
 ```python
 user_input = tf.keras.Input(shape=(1,), dtype=tf.string, name="user_id")
 num_bins = 1_000_000 # 1M bins
@@ -96,6 +103,7 @@ user_vector = layers.Flatten()(user_embedding)
 ```
 
 Embedding size depends on model size, cardinality, data volume etc. For small cardinality, the common values are 4, 8, etc. For high cardinality, common values are 32, 64, etc. 
+
 
 ## Timestamp, Dates
 
