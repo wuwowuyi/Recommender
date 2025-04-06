@@ -1,4 +1,4 @@
-Best practice in preprocessing structured data for recommenders
+My summary or understanding on the best practice in preprocessing structured data for recommenders
 * numerical. like age, income, price, etc
 * categorical. like country, gender, user_id, movie_id, product_sku, etc
 * timestampe/date.
