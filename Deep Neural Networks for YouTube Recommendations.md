@@ -1,6 +1,6 @@
 My notes and summary on paper [Deep Neural Networks for YouTube Recommendations](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/45530.pdf).
 
-This is a concise paper packed with rich details!
+This is a concise paper packed with rich details! Also one of the best papers I've ever read!
 
 ## Introduction
 Why recommending YouTube videos is hard
@@ -29,7 +29,7 @@ Live A/B results are not always correlated with offline experiments. (??)
 
 ### Recommendation Modeled as Classification problem
 
-$\displaystyle P(w_t|U, C) = \frac{e^{v_iu}}{\sum_{j \in V}e^{v_ju}}$. where:
+$\displaystyle P(w_t|U, C) = \frac{e^{v_iu}}{\sum_{j \in V}e^{v_ju}}$. 
 
 * $w_t$ is video watch at time $t$
 * video $i$ and video embedding $v \in R^N$
@@ -61,32 +61,17 @@ Use various features:
 * User's geographic region and device
 * booleans and continuous features are treated like numbers and normalized
 
-#### Video freshness (video age) feature is important
-We consistently observe that users prefer fresh content, though NOT at the expense of relevance. There is a critical secondary phenomenon of bootstrapping and propagating viral content.
+#### Example Age (Not Video Age!)
+The distribution of video popularity is **high non-stationary** but the trained multinomial distribution will reflect the average watch likelihood in the training window of several weeks. To correct this, **we feed the video age of the training examples as a feature during training. At serving time, this feature is set to zero (or slightly negative) to reflect that the model is making predictions at the very end of the training window**.  :boom:
 
-The distribution of video popularity is high non-stationary but the trained multinomial distribution will reflect the average watch likelihood in the training window of several weeks.
+🤔 I think the example_age is not about boosting new videos. It’s about modeling the non-stationary distribution of user behavior over time during training. Note here:
 
-To correct this, **we feed the video age of the training examples as a feature during training. At serving time, this feature is set to zero (or slightly negative) to reflect that the model is making predictions at the very end of the training window**.  :boom:
+`example_age = training_time - watch_time`
 
-My understanding 🤔:
-* At training time, each training sample has a real video_age. `video_age = video_watch_time - video_upload_time`
+`video_age = watch_time - video_upload_time`
 
-For example
+The key point is that the distribution the model trained to learn is non-stationary, and therefore we feed in `example_age` to tell the model to down-weight older training examples.
 
-| Video ID | Upload Date | Watch Date | video_age |
-|----------|-------------|------------|-----------|
-| A        | March 20    | March 25   | 5 days    |
-| B        | March 21    | March 25   | 4 days    |
-| C        | March 22    | March 22   | 0 days (or 0.08 days, i.e. 2 hours)    |
-
-* At serving time, the model pretends all videos are “brand new” by setting `video_age = 0` or slightly negative — for **all** videos, not just new ones.
-You treat all candidate videos, regardless of upload time, as if they were just uploaded now, to simulate a “present-moment” popularity context. This lets the model score new videos more optimistically, like it learned to do during training.
-
-
-
-
-
-
-
+At serving time, the model pretends all videos are “brand new” by setting `example_age = 0` or slightly negative — for **all** videos. We treat all candidate videos, regardless of upload time, as if they were just uploaded now, to simulate a “present-moment” popularity context.
 
 
