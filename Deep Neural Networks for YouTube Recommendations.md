@@ -71,7 +71,8 @@ To correct this, **we feed the video age of the training examples as a feature d
 My understanding 🤔:
 * At training time, each training sample has a real video_age. `video_age = video_watch_time - video_upload_time`
 
-* For example:
+For example
+
 | Video ID | Upload Date | Watch Date | video_age |
 |----------|-------------|------------|-----------|
 | A        | March 20    | March 25   | 5 days    |
