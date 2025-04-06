@@ -74,4 +74,24 @@ The key point is that the distribution the model trained to learn is non-station
 
 At serving time, the model pretends all videos are “brand new” by setting `example_age = 0` or slightly negative — for **all** videos. We treat all candidate videos, regardless of upload time, as if they were just uploaded now, to simulate a “present-moment” popularity context.
 
+### Label (Training example) and Context Selection
+
+🤔 This section is about selecting training examples and constructing the context.
+
+Training examples selection:
+* generate from ALL youtube watches, not just watches on the produced recommendations
+* generate a fixed number of training examples per user, to prevent a small group of highly active users from dominating the loss
+
+Constructing the context: :boom:
+* Natural consumption patterns of videos typically lead to **very asymmetric co-watch probabilities**. 
+* We therefore found **much better performance predicting the user's next watch, rather than predicting a randomly held-out watch**. 
+* Held-out watch prediction **leaks future information** and ignore any asymmetric consumption patterns (🤔 when we predict the next watch, we don't know the future. somehow like GPT vs BERT.)
+
+<img src="assets/youtube_recommendation_figure5.png" alt="figure 5 in paper" width="550"/>
+
+(b) works better than (a) in the figure above.
+
+
+
+
 
