@@ -128,12 +128,13 @@ $L = -w \cdot \left[ y \log(\hat{p}) + (1 - y)\log(1 - \hat{p}) \right]$
 
 where:
 * $w = T$ the watch time $T$ when $y = 1$, and $w = 1$ when $y = 0$.
-* $\hat{p} = \frac{1}{1 + e^{-x}}$ where $x$ is the log odds, raw logits output of the last linear layer
+* $\hat{p} = \frac{1}{1 + e^{-x}}$ where $x$ is the log odds of click, raw logits output of the last linear layer
 
 Let $p$ be the probability of being watched (clicked), by definition odds = $\frac{p}{1-p}$, so the learned odds by the model is $\frac{\sum T_i}{N-k}$ where N is the total number of impressions in the training dataset, and $k$ is the total number of watched impressions.
 
 When $p = k/N$ is small, $\frac{p}{1-p} \approx p + p^2$ (the first two items of taylor series), 
-$\frac{\sum T_i}{N-k} = \frac{E[T] \cdot k}{N-k} \approx E[T](1+p) \approx E[T]$.
+
+$\frac{\sum T_i}{N-k} = \frac{E[T] \cdot k}{N-k} \approx E\[T\](1+p) \approx E[T]$.
 
 🤔 Weighted logistic regression vs MSE loss:
 * Weighted logistic regression models both click rate and watch time
