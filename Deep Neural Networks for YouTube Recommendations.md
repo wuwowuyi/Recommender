@@ -29,11 +29,18 @@ Live A/B results are not always correlated with offline experiments. (??)
 
 ### Recommendation Modeled as Classification problem
 
-$\displaystyle P(w_t|U, C) = \frac{e^{v_iu}}{\sum_{j \in V}e^{v_ju}}$. 
+### Model architecture and Training
+Model architecture is depicted in Figure 3 in the paper, similar idea as [word2vec](https://arxiv.org/abs/1301.3781). 
 
-* $w_t$ is video watch at time $t$
-* video $i$ and video embedding $v \in R^N$
-* user embedding $u \in R^N$ 
+Before training, a DNN model and video embedding matrix $W \in R^{|V| \times d}$ are initialized, where $|V|$ is the video corpus size, and d is embedding dimension like 256.
+
+Each training example corresponds to a watch record of a user. The inputs to DNN include user history and context, i.e., watch history, search history, demographics, example age, gender etc.
+
+Output of the last ReLU, before the softmax layer, is the user embedding $u \in R^d$. We compute softmax between the user embedding $u$ and each video $v \in R^d$, $\frac{e^{v_iu}}{\sum_{j \in V}e^{v_ju}}$. The watched video is the positive class for the softmax classifier.
+
+Gradients are back propagated to update the DNN and video embedding matrix $W$.
+
+At serving time, we run through the DNN to get a user embedding, and the scoring problem reduces to a nearest neighbor search problem.
 
 #### Training label
 use implicit feedback of watches to train the model, where a user completing a video is a positive example.
@@ -49,10 +56,7 @@ Computing the full softmax over the entire video corpus $V$ is expensive. The pa
 
 🤔 In tensorflow, I think we can use `tf.nn.sampled_softmax_loss` to compute the sampled cross entropy loss. 
 
-At serving time, the scoring problem reduces to a nearest neighbor search problem. The paper says A/B results were not particularly sensitive to the choice of nearest neighbor search algorithm. (🤔There are a number of choices to choose, like ScaNN, Faiss, etc.)
-
-### Model architecture
-Just two tower. Same idea as [word2vec](https://arxiv.org/abs/1301.3781). See Figure 3 in the paper.
+At serving, the paper says A/B results were not particularly sensitive to the choice of nearest neighbor search algorithm. (🤔There are a number of choices to choose, like ScaNN, Faiss, etc.)
 
 ### Features
 Use various features:
@@ -98,7 +102,7 @@ Constructing the context: :boom:
 * According to Figure 3, the [50 x 256] tensor is converted into a 256-dimensional vector via average pooling, like passing through `keras.layers.GlobalAveragePooling1D`. (There are other pooling methods of course. )
 * For a user who doesn't have 50 recent videos, we can create a padding mask for example.
 
-And search queries is preprocessed in the same way.
+And search queries are preprocessed in the same way.
 
 Network structure followed a common "tower" pattern in which **the bottom of the network is widest and each successive hidden layers halves the number of units**. Width and depth were added until the incremental benefit diminished and convergence became difficult.
 
