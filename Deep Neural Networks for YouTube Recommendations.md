@@ -119,8 +119,11 @@ We can see the output is always 256 dimensional.
 All features combined with the deepest structure has the best performance.
 
 ## Ranking
+For each candidate video, we can form a (video, user) pair combining user features, video features, context, etc. Then we put these pairs in a batch and feed it to the ranking model which output a scalar score (expected watch time) so that we can compute the top-k list.
 
 ### Modeling Expected Watch Time
+
+Ranking by click-through rate often promotes deceptive videos that the user does not complete ("clickbait") whereas watch time better captures engagement.
 
 🤔 The paper uses weighted logistic regression.
 
@@ -140,6 +143,13 @@ $\frac{\sum T_i}{N-k} = \frac{E[T] \cdot k}{N-k} \approx E\[T\](1+p) \approx E[T
 * Weighted logistic regression models both click rate and watch time
 * MSE only models the watch time
 * We care more about **ranking** than exact prediction so a classification is better
+
+### Experiments with Hidden layers
+The results show that increasing the width of hidden layers improves results, as does increasing their depth.
+
+The configuration of 1024 -> 512 -> 256 model configuration gave the best results with a  budgeted cost.
+
+Experiments also show weighted loss works better than weighing positive and negative examples equally.
 
 
 
