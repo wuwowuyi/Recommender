@@ -91,7 +91,28 @@ Constructing the context: :boom:
 
 (b) works better than (a) in the figure above.
 
+### Experiments with Features and Depth
 
+🤔 Regarding features, I understand each video ID or search token is embedded into a 256-dimensional vector. The bag size is 50. It means:
+* Up to 50 video IDs → each embedded into 256-d → results in a [50 x 256] tensor.
+* According to Figure 3, the [50 x 256] tensor is converted into a 256-dimensional vector via average pooling, like passing through `keras.layers.GlobalAveragePooling1D`. (There are other pooling methods of course. )
+* For a user who doesn't have 50 recent videos, we can create a padding mask for example.
+
+And search queries is preprocessed in the same way.
+
+Network structure followed a common "tower" pattern in which **the bottom of the network is widest and each successive hidden layers halves the number of units**. Width and depth were added until the incremental benefit diminished and convergence became difficult.
+
+| Depth   | Description                                                   |
+|---------|---------------------------------------------------------------|
+| Depth 0 | Logistic regression. Directly connects features to the output |
+| Depth 1 | One hidden layer with 256 units                               |
+| Depth 2 | 2 hidden layers, 512 -> 256.                                  |
+| Depth 3 | 3 hidden layers, 1024 -> 512 -> 256.                          |
+| Depth 4 | 4 hidden layers, 2048 -> 1024 -> 512 -> 256.                  |
+
+We can see the output is always 256 dimensional.
+
+All features combined with the deepest structure has the best performance.
 
 
 
