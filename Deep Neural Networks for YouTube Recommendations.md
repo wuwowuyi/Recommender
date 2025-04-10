@@ -27,7 +27,7 @@ Live A/B results are not always correlated with offline experiments. (??)
 
 ## Candidate Generation
 
-### Recommendation Modeled as Classification problem
+<img src="assets/youtube_retrieval.jpeg" alt="youtube retrieval" width="650"/>
 
 ### Model architecture and Training
 Model architecture is depicted in Figure 3 in the paper, similar idea as [word2vec](https://arxiv.org/abs/1301.3781). 
@@ -120,6 +120,8 @@ All features combined with the deepest structure has the best performance.
 
 ## Ranking
 For each candidate video, we can form a (video, user) pair combining user features, video features, context, etc. Then we put these pairs in a batch and feed it to the ranking model which output a scalar score (expected watch time) so that we can compute the top-k list.
+
+<img src="assets/youtube_ranking.jpeg" alt="youtube ranking" width="650"/>
 
 ### Modeling Expected Watch Time
 
