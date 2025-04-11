@@ -1,14 +1,14 @@
-My summary or understanding on the best practice in preprocessing structured data for recommenders
+My summary or understanding on some common practice in preprocessing data for recommenders
 * numerical. like age, income, price, etc
 * categorical. like country, gender, user_id, movie_id, product_sku, etc
+  * short text, like movie titles, search queries, user profiles, description
 * timestampe/date.
-* boolean, including multi-hot sparse input like viewing history, click history, etc.
-* short text, like movie titles, search queries, user profiles, description
+* boolean/binary, including multi-hot sparse input like viewing history, click history, etc.
 
-Use [Keras preprocessing layers](https://keras.io/api/layers/preprocessing_layers/) for example code.
-Suppose we have a `DataFrame` `df` that contains the data. 
 
-In general
+Use [Keras preprocessing layers](https://keras.io/api/layers/preprocessing_layers/) for example code. And suppose we have a `DataFrame` `df` that contains the data. 
+
+**In general**
 * DNNs prefer dense inputs
 * Tree models like XGBoost uses same encoding strategies as linear models
 
@@ -47,7 +47,8 @@ normalized_num = norm_layer(age_input)
  1. **Deep models can learn nonlinear patterns directly**
 - DNNs can **approximate arbitrary functions**.
 - If age has a nonlinear relationship with your target (e.g., clicks peak at age 25–35), a deep model can **learn that pattern** from raw continuous input.
-> No need to hand-engineer bins — deep models learn their own "bins" internally via learned weights.
+
+**No need to hand-engineer bins** — deep models learn their own "bins" internally via learned weights.
 
  2. **Discretization destroys granularity**
 - If you bucket age 25 and 39 into the same bin `[20–40)`, the model **can’t tell them apart**, even though they’re very different.
@@ -56,29 +57,25 @@ normalized_num = norm_layer(age_input)
  3. **Discretization = manual inductive bias**
 - It imposes **hard thresholds** based on assumptions.
 - Might work well if your bins are meaningful (e.g., "teen", "adult", "senior"), but if not carefully tuned, it can **introduce error** or degrade performance.
-- 
+
  4. **Gradient flow is better with continuous features**
 - DNNs rely on **smooth gradients** to optimize.
 - Discretization introduces **sudden jumps (non-differentiable boundaries)**, which can make learning harder or unstable — especially if you apply binning too early in the pipeline.
 
-## Categorical (string or int)
+## Categorical
 
-In general Categorical features model **group-wise effects**.
-### For Linear models
-* Use `StringLookup` or `IntegerLookup` if vocab is stable and small. e.g., country, gender
-* Use `Hashing` for unknown vocab or massive cardinality. e.g., user_id, tags
+In general categorical features model **group-wise effects**.
 
-Use `one_hot` for single categorical columns where each sample has exactly one category like gender, userid. 
-Use `multi_hot` for multi-categorical where each sample may have multiple categories like tags.
+### Low Cardinality Features
+Examples are country, gender, user_tier with values like `["free", "silver", "gold", "platinum"]`.
+
+For linear models, use `StringLookup` or `IntegerLookup` if vocab is stable and small. 
+Use `one_hot` for single categorical columns where each sample has exactly one category like gender. 
+Use `multi_hot` for multi-categorical where each sample may have multiple categories.
 A multi-hot vector indicates that multiple categories (or features) are active for a given input sample.
 
-### For Deep models
-If the categorical feature has a **stable and small vocabulary**
-* Use `StringLookup` or `IntegerLookup` to turn strings/ints into indices  
-* Use `Embedding` to map those indices to dense, trainable vectors 
-* Flatten before feeding into DNNs
+For deep models, we want to use dense representations. Therefore, there is typically a `Embedding` layer after `StringLookup` or `IntegerLookup`, and we need `Flatten` before feeding into DNNs.
 
-For a categorical feature is `"user_tier"` with values like `["free", "silver", "gold", "platinum"]`
 ```python
 vocab = ["free", "silver", "gold", "platinum"]
 user_tier_input = tf.keras.Input(shape=(1,), dtype=tf.string, name="user_tier")
@@ -89,20 +86,64 @@ tier_index = embedding(lookup(user_tier_input))  # shape: (batch, 1, 4)
 tier_vector = layers.Flatten()(embedding)  # shape: (batch, 4)
 ```
 
-For High-Cardinality Categorical Features, like user_id, movie_id, product_sku, etc.
-* High means >= 100K. or long tail
-* Cold start, the number of category is dynamic and realtime. 
+### High Cardinality Features
+
+Examples are user IDs, video IDs, product_sku, search queries, movie titles, tags, etc.
+* High cardinality means >= 100K. or long tail
+* Cold start, the number of category is dynamic and realtime.
+
+Typically, we use `Hashing` + `Embedding` for large cardinality IDs.
+
+Embedding dimension increase approximately proportional to the logarithm of the number of unique values.
+Very large cardinality spaces are truncated by including only the top N after sorting based on their frequency in clicked impressions. Out-of-vocabulary values are simply mapped to the zero embedding.
+
 
 ```python
 user_input = tf.keras.Input(shape=(1,), dtype=tf.string, name="user_id")
 num_bins = 1_000_000 # 1M bins
 hasher = layers.Hashing(num_bins=num_bins, output_mode='int')  
-encoder = layers.Embedding(input_dim=num_bins, output_dim=32)
+encoder = layers.Embedding(input_dim=num_bins, output_dim=16)
 userid_embedding = encoder(hasher(user_input))
 user_vector = layers.Flatten()(user_embedding)
 ```
 
-Embedding size depends on model size, cardinality, data volume etc. For small cardinality, the common values are 4, 8, etc. For high cardinality, common values are 32, 64, etc. 
+### Text as Categorical Feature
+short text data like movie titles, search queries, user profile, brief description
+* For linear models,  typically `TextVectorization(output_mode='tf_idf')`
+* For deep models, `TextVectorization(output_mode='int')` → `Embedding`
+
+For deep and wide models, TF-IDF scores complements the learned embeddings in the deep, combining **memorization (wide)** + **generalization (deep)**.
+
+Wide branch memorize patterns like:  
+* `"action"` → likely to click "Mad Max"  
+* `"romantic"` → likely to click "The Notebook"
+
+Deep branch can generalize (e.g., "loves" ≈ "enjoys").
+
+```python
+user_profile = tf.keras.Input(shape=(1,), dtype=tf.string, name="user_profile")
+
+# wide
+wide_vectorizer = layers.TextVectorization(max_tokens=50000, output_mode="tf_idf")
+wide_vectorizer.adapt(df["user_profile"])
+wide_text = wide_vectorizer(user_profile)  # shape: (batch, vocab_size)
+
+# deep
+deep_vectorizer = layers.TextVectorization(  
+    max_tokens=50000, 
+    output_mode="int",  
+    output_sequence_length=32
+)  
+deep_vectorizer.adapt(df["user_profile"])  
+deep_text = deep_vectorizer(inputs["user_profile"])
+# embedding shape is (batch_size, sequence_length, embedding_dim)
+deep_text = layers.Embedding(input_dim=deep_vectorizer.vocabulary_size(), output_dim=16)(deep_text)
+# average pooling before feeding into a Dense layer
+deep_text = layers.GlobalAveragePooling1D()(deep_text)  # (batch_size, 8)
+```
+The average pooling acts like a semantic **bag of words** — capturing the overall meaning of the text. Sum pooling is also common. 
+
+Note that the `TextVectorization` layer can only be executed on a CPU, so put the `TextVectorization` layer in the `tf.data`pipeline.
 
 
 ## Timestamp, Dates
@@ -157,7 +198,7 @@ If we want both, use both and concatenate.
 - Do not using future timestamps when predicting current labels
 - Time-based features are **causal** (e.g., don’t use “days until click”)
 
-## Boolean
+## Binary/Boolean
 
 For linear models, we can treat a boolean column like a Categorical column whose vocabulary size is 2. 
 ```python
@@ -167,7 +208,7 @@ encoder = tf.keras.layers.CategoryEncoding(num_tokens=2, output_mode="one_hot")
 active_feature = encoder(indexer(is_active))
 ```
 
-For deep models, cast to `float32`. 
+For deep models, another option is cast to `float32`. 
 ```python
 active = tf.keras.Input(shape=(1,), dtype=tf.bool, name="is_active")
 active_feature = tf.keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(active)
@@ -179,42 +220,6 @@ Example use case: movie viewing history, click history, tags, text.
 
 See [A working example](#a-full-working-example) below. In the example, the column `clicked_genres` is a multi-hot sparse input. Remember to use a `Dense` layer to convert it to a dense multi-hot vector before feeding into DNNs.
 
-## Text Features
-
-short text data like user profile, brief description
-* For linear models,  typically `TextVectorization(output_mode='tf_idf')`
-* For deep models, `TextVectorization` → `Embedding`
-
-For deep and wide models, TF-IDF scores complements the learned embeddings in the deep, combining **memorization (wide)** + **generalization (deep)**
-Wide branch memorize patterns like:  
-* `"action"` → likely to click "Mad Max"  
-* `"romantic"` → likely to click "The Notebook"
-Deep branch can generalize (e.g., "loves" ≈ "enjoys").
-
-```python
-user_profile = tf.keras.Input(shape=(1,), dtype=tf.string, name="user_profile")
-
-# wide
-wide_vectorizer = layers.TextVectorization(max_tokens=1000, output_mode="tf_idf")
-wide_vectorizer.adapt(df["user_profile"])
-wide_text = wide_vectorizer(user_profile)  # shape: (batch, vocab_size)
-
-# deep
-deep_vectorizer = layers.TextVectorization(  
-    max_tokens=1000,  
-    output_mode="int",  
-    output_sequence_length=10  
-)  
-deep_vectorizer.adapt(df["user_profile"])  
-deep_text = deep_vectorizer(inputs["user_profile"])
-# embedding shape is (batch_size, sequence_length, embedding_dim)
-deep_text = layers.Embedding(input_dim=1000, output_dim=16)(deep_text)
-# average pooling before feeding into a Dense layer
-deep_text = layers.GlobalAveragePooling1D()(deep_text)  # (batch_size, 16)
-```
-The average pooling acts like a semantic **bag of words** — capturing the overall meaning of the text. 
-
-Note that the `TextVectorization` layer can only be executed on a CPU, so put the `TextVectorization` layer in the `tf.data`pipeline.
 
 ## A full working example
 
