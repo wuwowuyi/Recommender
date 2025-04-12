@@ -55,13 +55,13 @@ DIN calculate the representation vector of user interests by taking into account
 🤔 [Deep Neural Networks for YouTube Recommendations](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/45530.pdf) talked about similar idea:
 > the most important signals are those that describe a user's previous interactions with the item itself and other similar items.
 
-DIN introduced a local activate unit (Attention) calculate user's interests in the candidate ad.
+DIN introduced a local activate unit (Attention) to calculate user's interests in the candidate ad.
 
 $v_U(A) = f(v_A, e_1, e_2, ..., e_H) = \sum_{j=1}^H a(e_j, v_A)e_j = \sum_{j=1}^H w_je_j$.
 
 where
-* $\{e_1, e_2, ..., e_H\}$ is the click history of user $U$
-* candidate ad $v_A$
+* $\\{e_1, e_2, ..., e_H\\}$ is the click history of user $U$ (key of attention)
+* candidate ad $v_A$ (query of attention)
 * $a(\cdot)$ is a feed-forward network with output as the activation weight $w_j$ for each history $e_j$
 
 Different from attention methods, the constraint $\sum_iW_i$ is relaxed. This value is treated as **an approximation of the intensity of activated user interests to some degree**. 
@@ -70,7 +70,7 @@ The authors also tried LSTM to model user history, but didn't get improvement.
 
 Different from text which is under the constraint of grammar, user history sequence may contain multiple concurrent interests. **Rapid jumping and sudden ending over these interests causes the sequence data of user behaviors to seem to be noisy**. A possible direction is to design special structure to model such data in a sequence way.
 
-See [code here](https://github.com/zhougr1993/DeepInterestNetwork/blob/9765f96202f849e59ff260c8b46931a0ddf01d77/din/model.py#L200) to understand how this attention layer works.
+See [code here](https://github.com/zhougr1993/DeepInterestNetwork/blob/9765f96202f849e59ff260c8b46931a0ddf01d77/din/model.py#L200) to understand how this attention unit works.
 
 
 
