@@ -14,8 +14,8 @@ $\displaystyle \hat{y}(x) = w_0 + \sum_{i=1}^n w_ix_i + \sum_{i=1}^n\sum_{j=i+1}
 
 where:
 * $w_0 \in R$ is the bias
-* $w \in R^n$
-* $V \in R^{n \times k}$ and $v_i \in R^k$ where k is a hyperparameter (embedding dimension)
+* $w \in R^n$, $w_i \in R$
+* $V \in R^{n \times k}$ and $v_i \in R^k$ where $k$ is a hyperparameter (embedding dimension)
 
 **$<v_i, v_j>$ models the interaction between i-th and j-th features. Instead of using an own model parameter $w_{i,j} \in R$ for each interaction, the FM models the interaction by factorizing it**.
 
@@ -29,15 +29,15 @@ This lets we compute the entire second-order term in **linear time** with respec
 
 ### About Factorization and $k$
 
-🤔 The pairwise interaction matrix $W \in R^{n \times n}$ (where $n$ is the number of features) is positive definite. We know it has a Cholesky decomposition $W = VV^T$, where $V \n R^{n \times n}$ is a lower triangular matrix. If we want to have an approximation, the dimension $k$ of $v_i$ must be large enough.
+🤔 The pairwise interaction matrix $W \in R^{n \times n}$ (where $n$ is the number of features) is positive definite. We know it has a Cholesky decomposition $W = VV^T$, where $V \in R^{n \times n}$ is a lower triangular matrix. If we want to have an approximation, the dimension $k$ of $v_i$ must be large enough.
 
-The paper says, in the sparse settings, typically a small $k$ should be chosen because there is not enough data to estimate complex interactions $W$. Restricting $k$ leads to better generalization thus improved interaction matrices under sparsity.
+The paper says, in the sparse settings, **typically a small $k$ should be chosen because there is not enough data to estimate complex interactions $W$**. Restricting $k$ leads to better generalization thus improved interaction matrices under sparsity.
 
 ## DeepFM for CTR Prediction
 DeepFM consists of two components, with a shared embedding layer trained jointly.
 
 ### FM component
-The FM component is a factorization machine, aiming to learn a linear (order-1) features and order-2 feature interactions.
+The FM component is a 2-way factorization machine, aiming to learn linear (order-1) features and order-2 feature interactions.
 
 In previous approach, the parameter of an interaction between feature $i$ and $j$ can be trained only when they are both in the same data record. While in FM, the interaction is measured via the dot product of their corresponding latent vector $V_i$ and $V_j$. With latent vectors, FM can learn $V_i$ or $V_j$ whenever feature $i$ or $j$ is present.
 
