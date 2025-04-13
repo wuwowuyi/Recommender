@@ -59,5 +59,5 @@ Different from previous works, here **the embedding layer is shared by both FM a
 * it learns both low and high order feature interactions from raw features
 * there is **no need for expertise feature engineering** of the input.
 
-
+<img src="assets/deepFM.jpeg" alt="deepFM architecture" width="550"/>
 
